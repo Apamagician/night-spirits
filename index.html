@@ -4,6 +4,7 @@
 <head>
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <title>Night Spirits Esports</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -20,16 +21,14 @@ padding:20px;
 }
 
 .logo{
-font-size:36px;
-color:#ff1a1a;
+font-size:38px;
+color:#ff2e2e;
 text-shadow:0 0 30px #ff0000;
-margin-bottom:10px;
+margin-bottom:20px;
 }
 
-.panel-title{
-font-size:20px;
-margin-bottom:10px;
-color:#ff4444;
+.panel{
+margin-bottom:15px;
 }
 
 table{
@@ -40,7 +39,7 @@ margin-top:20px;
 
 th{
 background:#111;
-color:#ff4444;
+color:#ff2e2e;
 }
 
 th,td{
@@ -56,39 +55,42 @@ input{
 background:#111;
 border:1px solid #333;
 color:white;
-padding:6px;
+padding:8px;
 border-radius:5px;
 }
 
 button{
-background:#b30000;
+background:#b31212;
 border:none;
 color:white;
-padding:8px 12px;
-margin:4px;
+padding:10px;
+margin:5px;
 border-radius:6px;
 cursor:pointer;
 }
 
 button:hover{
-background:#ff1a1a;
+background:#ff2e2e;
 }
 
 #panel{
 display:none;
 }
 
-#profile{
-margin-top:10px;
-font-size:14px;
-color:#aaa;
-}
-
 #adminPanel{
-margin-top:20px;
+margin-top:15px;
 padding:10px;
 background:#111;
 border:1px solid #333;
+}
+
+#logs{
+margin-top:20px;
+background:#111;
+padding:10px;
+max-height:150px;
+overflow:auto;
+font-size:12px;
 }
 
 </style>
@@ -117,8 +119,6 @@ border:1px solid #333;
 
 <div id="adminPanel">
 
-<div class="panel-title">Admin Panel</div>
-
 <button onclick="addTeam()">Добавить команду</button>
 <button onclick="sortTable()">Сортировать</button>
 <button onclick="save()">Сохранить</button>
@@ -142,18 +142,21 @@ border:1px solid #333;
 
 <canvas id="chart"></canvas>
 
+<div id="logs"></div>
+
 </div>
 
 <script>
 
 const users={
-Apa:{pass:"1029384756",role:"admin",rank:"Administrator"},
-popstar:{pass:"popstar1",role:"editor",rank:"Editor"},
-"Люся":{pass:"nik69nikita",role:"editor",rank:"Editor"}
+Apa:{pass:"1029384756",role:"admin"},
+popstar:{pass:"popstar1",role:"editor"},
+"Люся":{pass:"nik69nikita",role:"editor"}
 }
 
 let role="viewer"
 let username="viewer"
+let chart
 
 function login(){
 
@@ -168,8 +171,9 @@ username=u
 document.getElementById("loginBox").style.display="none"
 document.getElementById("panel").style.display="block"
 
-document.getElementById("profile").innerHTML=
-"👤 "+username+" | Rank: "+users[u].rank
+document.getElementById("profile").innerHTML="👤 "+username+" | "+role
+
+log("Login "+username)
 
 load()
 
@@ -188,8 +192,7 @@ role="viewer"
 document.getElementById("loginBox").style.display="none"
 document.getElementById("panel").style.display="block"
 
-document.getElementById("profile").innerHTML=
-"👁 Viewer mode"
+document.getElementById("profile").innerHTML="👁 Viewer mode"
 
 document.getElementById("adminPanel").style.display="none"
 
@@ -216,18 +219,15 @@ let row=table.insertRow()
 row.innerHTML=`
 
 <td>${table.rows.length-1}</td>
-
 <td contenteditable="true">Team</td>
-
 <td contenteditable="true" oninput="calc()">0</td>
-
 <td contenteditable="true" oninput="calc()">0</td>
-
 <td>0</td>
-
 <td><button onclick="del(this)">X</button></td>
 
 `
+
+log("Добавлена команда")
 
 }
 
@@ -238,6 +238,8 @@ if(role=="viewer") return
 btn.parentElement.parentElement.remove()
 
 calc()
+
+log("Удалена команда")
 
 }
 
@@ -274,6 +276,8 @@ table.rows[i].cells[0].innerText=i
 
 }
 
+log("Таблица отсортирована")
+
 updateChart()
 
 }
@@ -281,6 +285,8 @@ updateChart()
 function save(){
 
 localStorage.setItem("table",document.getElementById("table").innerHTML)
+
+log("Сохранено")
 
 }
 
@@ -294,7 +300,9 @@ document.getElementById("table").innerHTML=data
 
 }
 
-calc()
+updateChart()
+
+showLogs()
 
 }
 
@@ -308,11 +316,15 @@ let rows=document.getElementById("table").rows
 for(let i=1;i<rows.length;i++){
 
 names.push(rows[i].cells[1].innerText)
-totals.push(rows[i].cells[4].innerText)
+totals.push(Number(rows[i].cells[4].innerText)||0)
 
 }
 
-new Chart(document.getElementById("chart"),{
+if(chart){
+chart.destroy()
+}
+
+chart=new Chart(document.getElementById("chart"),{
 
 type:"bar",
 
@@ -321,11 +333,31 @@ labels:names,
 datasets:[{
 label:"Total Score",
 data:totals,
-backgroundColor:"#ff1a1a"
+backgroundColor:"#ff2e2e"
 }]
 }
 
 })
+
+}
+
+function log(text){
+
+let logs=JSON.parse(localStorage.getItem("logs")||"[]")
+
+logs.push(new Date().toLocaleTimeString()+" "+text)
+
+localStorage.setItem("logs",JSON.stringify(logs))
+
+}
+
+function showLogs(){
+
+if(role!="admin") return
+
+let logs=JSON.parse(localStorage.getItem("logs")||"[]")
+
+document.getElementById("logs").innerHTML=logs.join("<br>")
 
 }
 
