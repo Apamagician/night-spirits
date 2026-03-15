@@ -4,8 +4,7 @@
 <head>
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
-<title>Night Spirits Clan</title>
+<title>Night Spirits Tournament</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -15,24 +14,28 @@ body{
 background:#0a0505;
 color:white;
 font-family:Arial;
-margin:0;
-padding:20px;
 text-align:center;
+padding:10px;
 }
 
 h1{
 color:#ff2e2e;
-text-shadow:0 0 20px #ff2e2e;
+text-shadow:0 0 25px #ff2e2e;
+}
+
+.logo{
+font-size:28px;
+margin-bottom:10px;
 }
 
 table{
 width:100%;
 border-collapse:collapse;
-margin-top:20px;
+margin-top:15px;
 }
 
 th,td{
-padding:10px;
+padding:8px;
 border-bottom:1px solid #333;
 }
 
@@ -40,8 +43,16 @@ tr:hover{
 background:rgba(255,0,0,0.2);
 }
 
+input{
+width:90%;
+background:#111;
+border:1px solid #333;
+color:white;
+padding:5px;
+}
+
 button{
-padding:10px;
+padding:8px 12px;
 margin:5px;
 background:#b31212;
 border:none;
@@ -54,23 +65,17 @@ button:hover{
 background:#ff2e2e;
 }
 
-input{
-padding:6px;
-border-radius:5px;
-border:none;
-width:90px;
+#panel{
+display:none;
 }
 
-.team{
-width:140px;
-}
-
-@media(max-width:700px){
-
-th,td{
-font-size:14px;
-}
-
+#logs{
+max-height:150px;
+overflow:auto;
+background:#111;
+padding:10px;
+margin-top:10px;
+font-size:12px;
 }
 
 </style>
@@ -79,7 +84,7 @@ font-size:14px;
 
 <body>
 
-<h1>🌙 Night Spirits Clan</h1>
+<h1 class="logo">🔥 Night Spirits 🔥</h1>
 
 <div id="login">
 
@@ -89,32 +94,36 @@ font-size:14px;
 <br>
 
 <button onclick="login()">Login</button>
-<button onclick="viewer()">Просмотр</button>
+<button onclick="viewer()">Viewer</button>
 
 </div>
 
-<div id="panel" style="display:none">
+<div id="panel">
 
-<h2>Турнирная таблица</h2>
+<button onclick="sortTable()">Сортировать</button>
+<button onclick="addRow()">Добавить</button>
+<button onclick="save()">Сохранить</button>
 
 <table id="table">
 
 <tr>
 <th>TOP</th>
-<th>TEAM</th>
+<th>Team</th>
 <th>PTS</th>
-<th>KILLS</th>
-<th>SUM</th>
-<th>DEL</th>
+<th>Kills</th>
+<th>Total</th>
+<th>X</th>
 </tr>
 
 </table>
 
-<button onclick="calculate()">Посчитать и отсортировать</button>
-
-<h2>Статистика киллов</h2>
+<h2>График</h2>
 
 <canvas id="chart"></canvas>
+
+<h3>Logs (admin only)</h3>
+
+<div id="logs"></div>
 
 </div>
 
@@ -128,17 +137,41 @@ editor2:{pass:"nik69nikita",role:"Люся"}
 
 let role="viewer"
 
+function log(text){
+
+let logs=JSON.parse(localStorage.getItem("logs")||"[]")
+
+logs.push(new Date().toLocaleTimeString()+" "+text)
+
+localStorage.setItem("logs",JSON.stringify(logs))
+
+renderLogs()
+
+}
+
+function renderLogs(){
+
+if(role!="admin") return
+
+let logs=JSON.parse(localStorage.getItem("logs")||"[]")
+
+document.getElementById("logs").innerHTML=logs.join("<br>")
+
+}
+
 function login(){
 
-let u=document.getElementById("user").value
-let p=document.getElementById("pass").value
+let u=user.value
+let p=pass.value
 
 if(users[u] && users[u].pass==p){
 
 role=users[u].role
 
-document.getElementById("login").style.display="none"
-document.getElementById("panel").style.display="block"
+login.style.display="none"
+panel.style.display="block"
+
+log(u+" login")
 
 load()
 
@@ -154,34 +187,40 @@ function viewer(){
 
 role="viewer"
 
-document.getElementById("login").style.display="none"
-document.getElementById("panel").style.display="block"
+login.style.display="none"
+panel.style.display="block"
 
 load()
 
 }
 
-let table=document.getElementById("table")
+function addRow(){
 
-for(let i=1;i<=25;i++){
+if(role=="viewer") return
 
-let row=table.insertRow()
+let t=document.getElementById("table")
 
-row.innerHTML=`
+let r=t.insertRow()
 
-<td class="rank">${i}</td>
+let i=t.rows.length-1
 
-<td><input class="team" placeholder="team"></td>
+r.innerHTML=`
 
-<td><input type="number" class="pts" value="0"></td>
+<td>${i}</td>
 
-<td><input type="number" class="kills" value="0"></td>
+<td contenteditable="true">team</td>
 
-<td class="sum">0</td>
+<td contenteditable="true" oninput="calc()">0</td>
+
+<td contenteditable="true" oninput="calc()">0</td>
+
+<td>0</td>
 
 <td><button onclick="del(this)">X</button></td>
 
 `
+
+log("row added")
 
 }
 
@@ -191,69 +230,94 @@ if(role=="viewer") return
 
 btn.parentElement.parentElement.remove()
 
+calc()
+
+log("row deleted")
+
 }
 
-function calculate(){
+function calc(){
 
-let rows=[...table.rows].slice(1)
+let rows=table.rows
 
-let data=[]
+for(let i=1;i<rows.length;i++){
 
-rows.forEach(row=>{
+let pts=parseInt(rows[i].cells[2].innerText)||0
+let kills=parseInt(rows[i].cells[3].innerText)||0
 
-let team=row.querySelector(".team").value
-let pts=Number(row.querySelector(".pts").value)
-let kills=Number(row.querySelector(".kills").value)
+rows[i].cells[4].innerText=pts+kills
 
-let sum=pts+kills
-
-row.querySelector(".sum").innerText=sum
-
-data.push({team,pts,kills,sum})
-
-})
-
-data.sort((a,b)=>b.sum-a.sum)
-
-rows.forEach((row,i)=>{
-
-row.querySelector(".rank").innerText=i+1
-row.querySelector(".team").value=data[i].team
-row.querySelector(".pts").value=data[i].pts
-row.querySelector(".kills").value=data[i].kills
-row.querySelector(".sum").innerText=data[i].sum
-
-})
+}
 
 updateChart()
 
-save()
+}
+
+function sortTable(){
+
+let rows=[...table.rows].slice(1)
+
+rows.sort((a,b)=>b.cells[4].innerText-a.cells[4].innerText)
+
+rows.forEach(r=>table.appendChild(r))
+
+for(let i=1;i<table.rows.length;i++){
+
+table.rows[i].cells[0].innerText=i
+
+}
+
+log("table sorted")
+
+}
+
+function save(){
+
+localStorage.setItem("table",table.innerHTML)
+
+log("saved")
+
+}
+
+function load(){
+
+let data=localStorage.getItem("table")
+
+if(data){
+
+table.innerHTML=data
+
+}
+
+calc()
+
+renderLogs()
 
 }
 
 function updateChart(){
 
 let names=[]
-let kills=[]
+let totals=[]
 
 let rows=table.rows
 
 for(let i=1;i<rows.length;i++){
 
-names.push(rows[i].querySelector(".team").value)
-kills.push(rows[i].querySelector(".kills").value)
+names.push(rows[i].cells[1].innerText)
+totals.push(rows[i].cells[4].innerText)
 
 }
 
-new Chart(document.getElementById("chart"),{
+new Chart(chart,{
 
 type:"bar",
 
 data:{
 labels:names,
 datasets:[{
-label:"Kills",
-data:kills,
+label:"Score",
+data:totals,
 backgroundColor:"#ff2e2e"
 }]
 }
@@ -262,33 +326,14 @@ backgroundColor:"#ff2e2e"
 
 }
 
-function save(){
+setInterval(()=>{
 
-localStorage.setItem("tournament",table.innerHTML)
-
-}
-
-function load(){
-
-let data=localStorage.getItem("tournament")
-
-if(data){
-
-table.innerHTML=data
-
-}
-
-updateChart()
-
-}
-
-setInterval(function(){
-
-localStorage.setItem("tournament",table.innerHTML)
+localStorage.setItem("table",table.innerHTML)
 
 },3000)
 
 </script>
 
 </body>
+
 </html>
