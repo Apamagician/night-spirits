@@ -1,9 +1,8 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <title>Night Spirits Clan</title>
 
@@ -13,36 +12,38 @@
 
 <body>
 
-<h1>Night Spirits Clan</h1>
+<h1>Night Spirits</h1>
 
-<div class="login">
+<div id="login">
 
-<input id="email" placeholder="Email">
-<input id="password" type="password" placeholder="Password">
+<h2>Login</h2>
+
+<input id="email" placeholder="email">
+<input id="password" type="password" placeholder="password">
 
 <button onclick="login()">Login</button>
 
 </div>
 
-<div class="table-container">
+<div id="panel" style="display:none">
 
-<table>
+<button onclick="addPlayer()">Add player</button>
+<button onclick="save()">Save</button>
 
-<thead>
+<table id="table">
+
 <tr>
 <th>Player</th>
 <th>Kills</th>
 <th>Wins</th>
-<th>Role</th>
-</tr>
-</thead>
 
-<tbody id="tbody"></tbody>
+</tr>
 
 </table>
 
-<button id="addBtn" onclick="addRow()">Add Player</button>
-<button id="saveBtn" onclick="save()">Save</button>
+<h2>Logs</h2>
+
+<div id="logs"></div>
 
 </div>
 
