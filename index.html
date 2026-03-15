@@ -4,34 +4,43 @@
 <head>
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Night Spirits Tournament</title>
+<title>Night Spirits Esports</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 
 body{
-background:#0a0505;
+background:#050505;
 color:white;
 font-family:Arial;
 text-align:center;
-padding:10px;
-}
-
-h1{
-color:#ff2e2e;
-text-shadow:0 0 25px #ff2e2e;
+margin:0;
+padding:20px;
 }
 
 .logo{
-font-size:28px;
+font-size:36px;
+color:#ff1a1a;
+text-shadow:0 0 30px #ff0000;
 margin-bottom:10px;
+}
+
+.panel-title{
+font-size:20px;
+margin-bottom:10px;
+color:#ff4444;
 }
 
 table{
 width:100%;
 border-collapse:collapse;
-margin-top:15px;
+margin-top:20px;
+}
+
+th{
+background:#111;
+color:#ff4444;
 }
 
 th,td{
@@ -44,38 +53,42 @@ background:rgba(255,0,0,0.2);
 }
 
 input{
-width:90%;
 background:#111;
 border:1px solid #333;
 color:white;
-padding:5px;
+padding:6px;
+border-radius:5px;
 }
 
 button{
-padding:8px 12px;
-margin:5px;
-background:#b31212;
+background:#b30000;
 border:none;
 color:white;
+padding:8px 12px;
+margin:4px;
 border-radius:6px;
 cursor:pointer;
 }
 
 button:hover{
-background:#ff2e2e;
+background:#ff1a1a;
 }
 
 #panel{
 display:none;
 }
 
-#logs{
-max-height:150px;
-overflow:auto;
-background:#111;
-padding:10px;
+#profile{
 margin-top:10px;
-font-size:12px;
+font-size:14px;
+color:#aaa;
+}
+
+#adminPanel{
+margin-top:20px;
+padding:10px;
+background:#111;
+border:1px solid #333;
 }
 
 </style>
@@ -84,9 +97,9 @@ font-size:12px;
 
 <body>
 
-<h1 class="logo">🔥 Night Spirits 🔥</h1>
+<div class="logo">🔥 Night Spirits Esports 🔥</div>
 
-<div id="login">
+<div id="loginBox">
 
 <input id="user" placeholder="login">
 <input id="pass" type="password" placeholder="password">
@@ -94,90 +107,75 @@ font-size:12px;
 <br>
 
 <button onclick="login()">Login</button>
-<button onclick="viewer()">Viewer</button>
+<button onclick="viewer()">Просмотр</button>
 
 </div>
 
 <div id="panel">
 
+<div id="profile"></div>
+
+<div id="adminPanel">
+
+<div class="panel-title">Admin Panel</div>
+
+<button onclick="addTeam()">Добавить команду</button>
 <button onclick="sortTable()">Сортировать</button>
-<button onclick="addRow()">Добавить</button>
 <button onclick="save()">Сохранить</button>
+
+</div>
 
 <table id="table">
 
 <tr>
 <th>TOP</th>
-<th>Team</th>
+<th>TEAM</th>
 <th>PTS</th>
-<th>Kills</th>
-<th>Total</th>
+<th>KILLS</th>
+<th>TOTAL</th>
 <th>X</th>
 </tr>
 
 </table>
 
-<h2>График</h2>
+<h2>Турнирный график</h2>
 
 <canvas id="chart"></canvas>
-
-<h3>Logs (admin only)</h3>
-
-<div id="logs"></div>
 
 </div>
 
 <script>
 
 const users={
-admin:{pass:"1029384756",role:"Apa"},
-editor1:{pass:"popstar1",role:"popstar"},
-editor2:{pass:"nik69nikita",role:"Люся"}
+Apa:{pass:"1029384756",role:"admin",rank:"Administrator"},
+popstar:{pass:"popstar1",role:"editor",rank:"Editor"},
+"Люся":{pass:"nik69nikita",role:"editor",rank:"Editor"}
 }
 
 let role="viewer"
-
-function log(text){
-
-let logs=JSON.parse(localStorage.getItem("logs")||"[]")
-
-logs.push(new Date().toLocaleTimeString()+" "+text)
-
-localStorage.setItem("logs",JSON.stringify(logs))
-
-renderLogs()
-
-}
-
-function renderLogs(){
-
-if(role!="admin") return
-
-let logs=JSON.parse(localStorage.getItem("logs")||"[]")
-
-document.getElementById("logs").innerHTML=logs.join("<br>")
-
-}
+let username="viewer"
 
 function login(){
 
-let u=user.value
-let p=pass.value
+let u=document.getElementById("user").value
+let p=document.getElementById("pass").value
 
 if(users[u] && users[u].pass==p){
 
 role=users[u].role
+username=u
 
-login.style.display="none"
-panel.style.display="block"
+document.getElementById("loginBox").style.display="none"
+document.getElementById("panel").style.display="block"
 
-log(u+" login")
+document.getElementById("profile").innerHTML=
+"👤 "+username+" | Rank: "+users[u].rank
 
 load()
 
 }else{
 
-alert("wrong login")
+alert("Wrong login")
 
 }
 
@@ -187,28 +185,39 @@ function viewer(){
 
 role="viewer"
 
-login.style.display="none"
-panel.style.display="block"
+document.getElementById("loginBox").style.display="none"
+document.getElementById("panel").style.display="block"
+
+document.getElementById("profile").innerHTML=
+"👁 Viewer mode"
+
+document.getElementById("adminPanel").style.display="none"
 
 load()
 
 }
 
-function addRow(){
+function addTeam(){
 
 if(role=="viewer") return
 
-let t=document.getElementById("table")
+let table=document.getElementById("table")
 
-let r=t.insertRow()
+if(table.rows.length>30){
 
-let i=t.rows.length-1
+alert("Max 30 teams")
 
-r.innerHTML=`
+return
 
-<td>${i}</td>
+}
 
-<td contenteditable="true">team</td>
+let row=table.insertRow()
+
+row.innerHTML=`
+
+<td>${table.rows.length-1}</td>
+
+<td contenteditable="true">Team</td>
 
 <td contenteditable="true" oninput="calc()">0</td>
 
@@ -220,8 +229,6 @@ r.innerHTML=`
 
 `
 
-log("row added")
-
 }
 
 function del(btn){
@@ -232,13 +239,11 @@ btn.parentElement.parentElement.remove()
 
 calc()
 
-log("row deleted")
-
 }
 
 function calc(){
 
-let rows=table.rows
+let rows=document.getElementById("table").rows
 
 for(let i=1;i<rows.length;i++){
 
@@ -255,6 +260,8 @@ updateChart()
 
 function sortTable(){
 
+let table=document.getElementById("table")
+
 let rows=[...table.rows].slice(1)
 
 rows.sort((a,b)=>b.cells[4].innerText-a.cells[4].innerText)
@@ -267,15 +274,13 @@ table.rows[i].cells[0].innerText=i
 
 }
 
-log("table sorted")
+updateChart()
 
 }
 
 function save(){
 
-localStorage.setItem("table",table.innerHTML)
-
-log("saved")
+localStorage.setItem("table",document.getElementById("table").innerHTML)
 
 }
 
@@ -285,13 +290,11 @@ let data=localStorage.getItem("table")
 
 if(data){
 
-table.innerHTML=data
+document.getElementById("table").innerHTML=data
 
 }
 
 calc()
-
-renderLogs()
 
 }
 
@@ -300,7 +303,7 @@ function updateChart(){
 let names=[]
 let totals=[]
 
-let rows=table.rows
+let rows=document.getElementById("table").rows
 
 for(let i=1;i<rows.length;i++){
 
@@ -309,16 +312,16 @@ totals.push(rows[i].cells[4].innerText)
 
 }
 
-new Chart(chart,{
+new Chart(document.getElementById("chart"),{
 
 type:"bar",
 
 data:{
 labels:names,
 datasets:[{
-label:"Score",
+label:"Total Score",
 data:totals,
-backgroundColor:"#ff2e2e"
+backgroundColor:"#ff1a1a"
 }]
 }
 
@@ -328,7 +331,7 @@ backgroundColor:"#ff2e2e"
 
 setInterval(()=>{
 
-localStorage.setItem("table",table.innerHTML)
+localStorage.setItem("table",document.getElementById("table").innerHTML)
 
 },3000)
 
