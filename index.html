@@ -4,7 +4,6 @@
 <head>
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
 <title>Night Spirits Esports</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -12,7 +11,7 @@
 <style>
 
 body{
-background:#050505;
+background:#040404;
 color:white;
 font-family:Arial;
 text-align:center;
@@ -21,14 +20,10 @@ padding:20px;
 }
 
 .logo{
-font-size:38px;
+font-size:40px;
 color:#ff2e2e;
-text-shadow:0 0 30px #ff0000;
+text-shadow:0 0 35px #ff0000;
 margin-bottom:20px;
-}
-
-.panel{
-margin-bottom:15px;
 }
 
 table{
@@ -39,16 +34,45 @@ margin-top:20px;
 
 th{
 background:#111;
-color:#ff2e2e;
 }
 
+th:nth-child(1){color:#ffd700;}
+th:nth-child(2){color:#00eaff;}
+th:nth-child(3){color:#ff8800;}
+th:nth-child(4){color:#ff2e2e;}
+th:nth-child(5){color:#00ff9c;}
+
 th,td{
-padding:8px;
+padding:10px;
 border-bottom:1px solid #333;
 }
 
+td:nth-child(3){color:#ff8800;font-weight:bold;}
+td:nth-child(4){color:#ff2e2e;font-weight:bold;}
+td:nth-child(5){color:#00ff9c;font-weight:bold;}
+
 tr:hover{
 background:rgba(255,0,0,0.2);
+}
+
+.winner{
+background:linear-gradient(90deg,#ffd700,#ffcc00,#ffd700);
+color:black;
+font-weight:bold;
+}
+
+button{
+background:#b31212;
+border:none;
+color:white;
+padding:10px 14px;
+margin:5px;
+border-radius:6px;
+cursor:pointer;
+}
+
+button:hover{
+background:#ff2e2e;
 }
 
 input{
@@ -59,38 +83,20 @@ padding:8px;
 border-radius:5px;
 }
 
-button{
-background:#b31212;
-border:none;
-color:white;
-padding:10px;
-margin:5px;
-border-radius:6px;
-cursor:pointer;
-}
-
-button:hover{
-background:#ff2e2e;
-}
-
 #panel{
 display:none;
 }
 
 #adminPanel{
-margin-top:15px;
-padding:10px;
 background:#111;
+padding:10px;
 border:1px solid #333;
+margin-top:15px;
 }
 
-#logs{
-margin-top:20px;
-background:#111;
-padding:10px;
-max-height:150px;
-overflow:auto;
-font-size:12px;
+#status{
+margin-top:10px;
+color:#00ff9c;
 }
 
 </style>
@@ -122,6 +128,7 @@ font-size:12px;
 <button onclick="addTeam()">Добавить команду</button>
 <button onclick="sortTable()">Сортировать</button>
 <button onclick="save()">Сохранить</button>
+<button onclick="exportTable()">📤 Экспорт таблицы</button>
 
 </div>
 
@@ -138,11 +145,11 @@ font-size:12px;
 
 </table>
 
-<h2>Турнирный график</h2>
+<div id="status">💾 ожидание сохранения</div>
+
+<h2>📊 Турнирный график</h2>
 
 <canvas id="chart"></canvas>
-
-<div id="logs"></div>
 
 </div>
 
@@ -173,8 +180,6 @@ document.getElementById("panel").style.display="block"
 
 document.getElementById("profile").innerHTML="👤 "+username+" | "+role
 
-log("Login "+username)
-
 load()
 
 }else{
@@ -192,7 +197,7 @@ role="viewer"
 document.getElementById("loginBox").style.display="none"
 document.getElementById("panel").style.display="block"
 
-document.getElementById("profile").innerHTML="👁 Viewer mode"
+document.getElementById("profile").innerHTML="👁 Viewer"
 
 document.getElementById("adminPanel").style.display="none"
 
@@ -207,11 +212,8 @@ if(role=="viewer") return
 let table=document.getElementById("table")
 
 if(table.rows.length>30){
-
 alert("Max 30 teams")
-
 return
-
 }
 
 let row=table.insertRow()
@@ -227,8 +229,6 @@ row.innerHTML=`
 
 `
 
-log("Добавлена команда")
-
 }
 
 function del(btn){
@@ -238,8 +238,6 @@ if(role=="viewer") return
 btn.parentElement.parentElement.remove()
 
 calc()
-
-log("Удалена команда")
 
 }
 
@@ -271,14 +269,26 @@ rows.sort((a,b)=>b.cells[4].innerText-a.cells[4].innerText)
 rows.forEach(r=>table.appendChild(r))
 
 for(let i=1;i<table.rows.length;i++){
-
 table.rows[i].cells[0].innerText=i
+}
+
+highlightWinner()
+
+updateChart()
 
 }
 
-log("Таблица отсортирована")
+function highlightWinner(){
 
-updateChart()
+let rows=document.getElementById("table").rows
+
+for(let i=1;i<rows.length;i++){
+rows[i].classList.remove("winner")
+}
+
+if(rows.length>1){
+rows[1].classList.add("winner")
+}
 
 }
 
@@ -286,7 +296,7 @@ function save(){
 
 localStorage.setItem("table",document.getElementById("table").innerHTML)
 
-log("Сохранено")
+document.getElementById("status").innerHTML="✅ сохранено"
 
 }
 
@@ -295,14 +305,11 @@ function load(){
 let data=localStorage.getItem("table")
 
 if(data){
-
 document.getElementById("table").innerHTML=data
-
 }
 
 updateChart()
-
-showLogs()
+highlightWinner()
 
 }
 
@@ -314,10 +321,8 @@ let totals=[]
 let rows=document.getElementById("table").rows
 
 for(let i=1;i<rows.length;i++){
-
 names.push(rows[i].cells[1].innerText)
 totals.push(Number(rows[i].cells[4].innerText)||0)
-
 }
 
 if(chart){
@@ -335,29 +340,31 @@ label:"Total Score",
 data:totals,
 backgroundColor:"#ff2e2e"
 }]
+},
+
+options:{
+animation:{
+duration:1500
+}
 }
 
 })
 
 }
 
-function log(text){
+function exportTable(){
 
-let logs=JSON.parse(localStorage.getItem("logs")||"[]")
+let table=document.getElementById("table").outerHTML
 
-logs.push(new Date().toLocaleTimeString()+" "+text)
+let blob=new Blob([table],{type:"text/html"})
 
-localStorage.setItem("logs",JSON.stringify(logs))
+let a=document.createElement("a")
 
-}
+a.href=URL.createObjectURL(blob)
 
-function showLogs(){
+a.download="night_spirits_table.html"
 
-if(role!="admin") return
-
-let logs=JSON.parse(localStorage.getItem("logs")||"[]")
-
-document.getElementById("logs").innerHTML=logs.join("<br>")
+a.click()
 
 }
 
@@ -365,7 +372,13 @@ setInterval(()=>{
 
 localStorage.setItem("table",document.getElementById("table").innerHTML)
 
-},3000)
+document.getElementById("status").innerHTML="💾 автосохранение..."
+
+setTimeout(()=>{
+document.getElementById("status").innerHTML="✅ данные сохранены"
+},1000)
+
+},5000)
 
 </script>
 
