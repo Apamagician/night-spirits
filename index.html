@@ -1,23 +1,28 @@
 <!DOCTYPE html>
 <html>
+
 <head>
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>Night Spirits</title>
+<title>Night Spirits Clan</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 
 body{
-background:#05050a;
+background:#0a0505;
 color:white;
 font-family:Arial;
+margin:0;
+padding:20px;
 text-align:center;
 }
 
 h1{
-color:#9d4edd;
-text-shadow:0 0 20px #9d4edd;
+color:#ff2e2e;
+text-shadow:0 0 20px #ff2e2e;
 }
 
 table{
@@ -31,18 +36,41 @@ padding:10px;
 border-bottom:1px solid #333;
 }
 
+tr:hover{
+background:rgba(255,0,0,0.2);
+}
+
 button{
 padding:10px;
 margin:5px;
-background:#7b2cbf;
+background:#b31212;
 border:none;
 color:white;
 border-radius:6px;
+cursor:pointer;
+}
+
+button:hover{
+background:#ff2e2e;
 }
 
 input{
-padding:8px;
-margin:5px;
+padding:6px;
+border-radius:5px;
+border:none;
+width:90px;
+}
+
+.team{
+width:140px;
+}
+
+@media(max-width:700px){
+
+th,td{
+font-size:14px;
+}
+
 }
 
 </style>
@@ -51,53 +79,80 @@ margin:5px;
 
 <body>
 
-<h1>Night Spirits Clan</h1>
+<h1>🌙 Night Spirits Clan</h1>
 
 <div id="login">
-
-<h3>Login</h3>
 
 <input id="user" placeholder="login">
 <input id="pass" type="password" placeholder="password">
 
 <br>
 
-<button onclick="login()">Войти</button>
+<button onclick="login()">Login</button>
+<button onclick="viewer()">Просмотр</button>
 
 </div>
 
 <div id="panel" style="display:none">
 
-<button onclick="addPlayer()">Добавить игрока</button>
-<button onclick="save()">Сохранить</button>
+<h2>Турнирная таблица</h2>
 
 <table id="table">
 
 <tr>
-<th>Player</th>
-<th>Kills</th>
-<th>Wins</th>
-<th>Delete</th>
+<th>TOP</th>
+<th>TEAM</th>
+<th>PTS</th>
+<th>KILLS</th>
+<th>SUM</th>
+<th>DEL</th>
 </tr>
 
 </table>
+
+<button onclick="calculate()">Посчитать и отсортировать</button>
+
+<h2>Статистика киллов</h2>
+
+<canvas id="chart"></canvas>
 
 </div>
 
 <script>
 
-let admin="Apa"
-let password="1029384756"
+const users={
+admin:{pass:"1234",role:"admin"},
+editor1:{pass:"1111",role:"editor"},
+editor2:{pass:"2222",role:"editor"}
+}
 
-let admin="popstar"
-let password="popstar"
+let role="viewer"
 
 function login(){
-  
+
 let u=document.getElementById("user").value
 let p=document.getElementById("pass").value
 
-if(u==admin && p==password){
+if(users[u] && users[u].pass==p){
+
+role=users[u].role
+
+document.getElementById("login").style.display="none"
+document.getElementById("panel").style.display="block"
+
+load()
+
+}else{
+
+alert("wrong login")
+
+}
+
+}
+
+function viewer(){
+
+role="viewer"
 
 document.getElementById("login").style.display="none"
 document.getElementById("panel").style.display="block"
@@ -106,56 +161,132 @@ load()
 
 }
 
-else{
-
-alert("Wrong login")
-
-}
-
-}
-
-function addPlayer(){
-
 let table=document.getElementById("table")
+
+for(let i=1;i<=25;i++){
 
 let row=table.insertRow()
 
 row.innerHTML=`
 
-<td contenteditable="true">player</td>
-<td contenteditable="true">0</td>
-<td contenteditable="true">0</td>
-<td><button onclick="deleteRow(this)">X</button></td>
+<td class="rank">${i}</td>
+
+<td><input class="team" placeholder="team"></td>
+
+<td><input type="number" class="pts" value="0"></td>
+
+<td><input type="number" class="kills" value="0"></td>
+
+<td class="sum">0</td>
+
+<td><button onclick="del(this)">X</button></td>
 
 `
 
 }
 
-function deleteRow(btn){
+function del(btn){
+
+if(role=="viewer") return
 
 btn.parentElement.parentElement.remove()
 
 }
 
+function calculate(){
+
+let rows=[...table.rows].slice(1)
+
+let data=[]
+
+rows.forEach(row=>{
+
+let team=row.querySelector(".team").value
+let pts=Number(row.querySelector(".pts").value)
+let kills=Number(row.querySelector(".kills").value)
+
+let sum=pts+kills
+
+row.querySelector(".sum").innerText=sum
+
+data.push({team,pts,kills,sum})
+
+})
+
+data.sort((a,b)=>b.sum-a.sum)
+
+rows.forEach((row,i)=>{
+
+row.querySelector(".rank").innerText=i+1
+row.querySelector(".team").value=data[i].team
+row.querySelector(".pts").value=data[i].pts
+row.querySelector(".kills").value=data[i].kills
+row.querySelector(".sum").innerText=data[i].sum
+
+})
+
+updateChart()
+
+save()
+
+}
+
+function updateChart(){
+
+let names=[]
+let kills=[]
+
+let rows=table.rows
+
+for(let i=1;i<rows.length;i++){
+
+names.push(rows[i].querySelector(".team").value)
+kills.push(rows[i].querySelector(".kills").value)
+
+}
+
+new Chart(document.getElementById("chart"),{
+
+type:"bar",
+
+data:{
+labels:names,
+datasets:[{
+label:"Kills",
+data:kills,
+backgroundColor:"#ff2e2e"
+}]
+}
+
+})
+
+}
+
 function save(){
 
-localStorage.setItem("players",document.getElementById("table").innerHTML)
-
-alert("saved")
+localStorage.setItem("tournament",table.innerHTML)
 
 }
 
 function load(){
 
-let data=localStorage.getItem("players")
+let data=localStorage.getItem("tournament")
 
 if(data){
 
-document.getElementById("table").innerHTML=data
+table.innerHTML=data
 
 }
 
+updateChart()
+
 }
+
+setInterval(function(){
+
+localStorage.setItem("tournament",table.innerHTML)
+
+},3000)
 
 </script>
 
