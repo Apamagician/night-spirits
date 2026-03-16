@@ -4,7 +4,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>Night Spirits Tournament</title>
+<title>Night Spirits</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
@@ -14,8 +14,8 @@
 body{
 font-family:Arial;
 background:linear-gradient(270deg,#020024,#090979,#000);
-background-size:600% 600%;
-animation:bg 10s infinite;
+background-size:400% 400%;
+animation:bg 12s infinite alternate;
 color:white;
 text-align:center;
 margin:0;
@@ -27,8 +27,10 @@ margin:0;
 }
 
 h1{
-color:#00eaff;
-text-shadow:0 0 15px #00eaff;
+font-size:40px;
+background:linear-gradient(90deg,#00eaff,#00ff9d);
+-webkit-background-clip:text;
+-webkit-text-fill-color:transparent;
 }
 
 button{
@@ -42,29 +44,40 @@ border-radius:6px;
 cursor:pointer;
 }
 
+button:hover{
+background:#00ffd0;
+}
+
 table{
 width:95%;
 margin:auto;
 border-collapse:collapse;
-background:rgba(0,0,0,0.6);
+background:rgba(0,0,0,0.7);
 }
 
 th,td{
-padding:8px;
+padding:10px;
 border-bottom:1px solid #333;
 }
 
 input{
-width:80px;
+width:70px;
 background:#111;
 color:white;
 border:none;
 padding:5px;
 }
 
-.first{background:black}
-.second{background:#444}
-.third{background:#777}
+.rank1{background:black}
+.rank2{background:#444}
+.rank3{background:#777}
+
+.team{
+background:linear-gradient(90deg,#00eaff,#00ff9d);
+-webkit-background-clip:text;
+-webkit-text-fill-color:transparent;
+font-weight:bold;
+}
 
 </style>
 
@@ -88,7 +101,7 @@ padding:5px;
 
 <div id="panel" style="display:none">
 
-<h1>🏆 Night Spirits Tournament</h1>
+<h1>Night Spirits</h1>
 
 <button onclick="addTeam()">Добавить</button>
 <button onclick="sortTable()">Сортировать</button>
@@ -108,7 +121,7 @@ padding:5px;
 
 </table>
 
-<h2>📊 Stats</h2>
+<h2>Stats</h2>
 
 <canvas id="chart"></canvas>
 
@@ -117,16 +130,14 @@ padding:5px;
 <script>
 
 const users={
-
 Apa:{pass:"1029384756",role:"admin"},
 popstar:{pass:"popstar1",role:"editor"},
 "Люся":{pass:"nik69nikita",role:"editor"}
-
 }
 
 let role="viewer"
-
 let table=document.getElementById("table")
+let chart
 
 function login(){
 
@@ -136,6 +147,7 @@ let p=document.getElementById("pass").value
 if(users[u] && users[u].pass==p){
 
 role=users[u].role
+localStorage.setItem("ns_role",role)
 
 document.getElementById("login").style.display="none"
 document.getElementById("panel").style.display="block"
@@ -153,7 +165,6 @@ alert("Wrong login")
 function viewer(){
 
 role="viewer"
-
 localStorage.setItem("ns_role","viewer")
 
 document.getElementById("login").style.display="none"
@@ -163,12 +174,11 @@ load()
 
 }
 
-role="viewer"
+function logout(){
 
-document.getElementById("login").style.display="none"
-document.getElementById("panel").style.display="block"
-
-load()
+save()
+localStorage.removeItem("ns_role")
+location.reload()
 
 }
 
@@ -181,15 +191,10 @@ let row=table.insertRow()
 row.innerHTML=`
 
 <td class="rank">0</td>
-
-<td contenteditable="true">Team</td>
-
+<td contenteditable="true" class="team">Team</td>
 <td contenteditable="true" class="pts">0</td>
-
 <td contenteditable="true" class="kills">0</td>
-
 <td class="total">0</td>
-
 <td><button onclick="del(this)">X</button></td>
 
 `
@@ -203,6 +208,7 @@ if(role=="viewer") return
 btn.parentElement.parentElement.remove()
 
 save()
+updateChart()
 
 }
 
@@ -212,8 +218,8 @@ let rows=[...table.rows].slice(1)
 
 rows.forEach(r=>{
 
-let pts=r.cells[2].innerText*1
-let kills=r.cells[3].innerText*1
+let pts=parseInt(r.cells[2].innerText)||0
+let kills=parseInt(r.cells[3].innerText)||0
 
 r.cells[4].innerText=pts+kills
 
@@ -227,25 +233,22 @@ table.appendChild(r)
 
 r.cells[0].innerText=i+1
 
-r.classList.remove("first","second","third")
+r.classList.remove("rank1","rank2","rank3")
 
 if(i==0){
-r.classList.add("first")
+r.classList.add("rank1")
 r.cells[0].innerHTML="🏆 1"
 }
 
-if(i==1) r.classList.add("second")
-if(i==2) r.classList.add("third")
+if(i==1) r.classList.add("rank2")
+if(i==2) r.classList.add("rank3")
 
 })
 
 updateChart()
-
 save()
 
 }
-
-let chart
 
 function updateChart(){
 
@@ -285,11 +288,8 @@ function download(){
 html2canvas(document.getElementById("panel")).then(canvas=>{
 
 let link=document.createElement("a")
-
-link.download="tournament.png"
-
+link.download="NightSpirits.png"
 link.href=canvas.toDataURL()
-
 link.click()
 
 })
@@ -302,49 +302,19 @@ localStorage.setItem("ns_table",table.innerHTML)
 
 }
 
-function login(){
-
-let u=document.getElementById("user").value
-let p=document.getElementById("pass").value
-
-if(users[u] && users[u].pass==p){
-
-role=users[u].role
-
-localStorage.setItem("ns_role",role)
-
-document.getElementById("login").style.display="none"
-document.getElementById("panel").style.display="block"
-
-load()
-
-}else{
-
-alert("Wrong login")
-
-}
-
-}
+function load(){
 
 let data=localStorage.getItem("ns_table")
 
-if(data) table.innerHTML=data
+if(data){
+table.innerHTML=data
+}
 
 updateChart()
 
 }
 
 setInterval(save,3000)
-
-function logout(){
-
-save()
-
-localStorage.removeItem("ns_role")
-
-location.reload()
-
-}
 
 window.onload=function(){
 
@@ -362,6 +332,7 @@ document.getElementById("panel").style.display="block"
 load()
 
 }
+
 </script>
 
 </body>
