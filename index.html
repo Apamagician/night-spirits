@@ -1,261 +1,276 @@
 <!DOCTYPE html>
 <html>
-
 <head>
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>Night Spirits</title>
+<title>Night Spirits Tournament</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
 <style>
 
 body{
 margin:0;
 font-family:Arial;
-background:linear-gradient(45deg,#020617,#001233,#020617);
-background-size:300% 300%;
-animation:bg 10s infinite alternate;
+background:linear-gradient(270deg,#020024,#090979,#000000);
+background-size:600% 600%;
+animation:bgMove 10s infinite;
 color:white;
 text-align:center;
 }
 
-@keyframes bg{
-0%{background-position:0%}
-100%{background-position:100%}
+@keyframes bgMove{
+0%{background-position:0% 50%}
+50%{background-position:100% 50%}
+100%{background-position:0% 50%}
 }
 
 h1{
-color:#4cc9ff;
-text-shadow:0 0 20px #4cc9ff;
+color:#00eaff;
+text-shadow:0 0 20px #00eaff;
 }
 
-input{
-padding:10px;
-margin:5px;
-border:none;
-border-radius:6px;
-}
-
-button{
-padding:10px 15px;
-margin:5px;
-border:none;
-border-radius:6px;
-background:#1f4cff;
-color:white;
+#poster{
+padding:20px;
 }
 
 table{
-width:95%;
+width:100%;
+max-width:900px;
 margin:auto;
 border-collapse:collapse;
-margin-top:20px;
+background:rgba(0,0,0,0.6);
 }
 
-th,td{
+th{
+background:#001f3f;
 padding:10px;
+}
+
+td{
+padding:8px;
 border-bottom:1px solid #333;
 }
 
-.top1{background:black}
-.top2{background:#444}
-.top3{background:#999;color:black}
+input{
+width:80px;
+background:#111;
+color:white;
+border:none;
+padding:5px;
+}
 
-#trophy{
-font-size:80px;
-display:none;
+.team{
+width:150px;
+}
+
+button{
+margin:10px;
+padding:10px 20px;
+border:none;
+border-radius:6px;
+background:#00eaff;
+color:black;
+font-weight:bold;
+cursor:pointer;
+}
+
+button:hover{
+background:#00a6b8;
+}
+
+.first{
+background:#111;
+}
+
+.second{
+background:#444;
+}
+
+.third{
+background:#777;
+}
+
+.trophy{
+font-size:22px;
 }
 
 </style>
-
 </head>
 
 <body>
 
-<h1>Night Spirits</h1>
+<div id="poster">
 
-<div id="login">
+<h1>🏆 Night Spirits Tournament</h1>
 
-<input id="user" placeholder="login">
-<input id="pass" type="password" placeholder="password">
-
-<br>
-
-<button onclick="login()">Login</button>
-<button onclick="viewer()">Просмотр</button>
-
-</div>
-
-<div id="panel" style="display:none">
-
-<div id="trophy">🏆</div>
-
-<button onclick="addTeam()">Добавить</button>
+<button onclick="addTeam()">Добавить команду</button>
 <button onclick="sortTable()">Сортировать</button>
+<button onclick="download()">Скачать PNG</button>
 
 <table id="table">
 
 <tr>
-<th>TOP</th>
-<th>TEAM</th>
-<th>KILLS</th>
+<th>Top</th>
+<th>Team</th>
 <th>PTS</th>
-<th>TOTAL</th>
+<th>Kills</th>
+<th>Total</th>
+<th>❌</th>
 </tr>
 
 </table>
 
-<h2>Graph</h2>
+<h2>Статистика турнира</h2>
+
 <canvas id="chart"></canvas>
 
 </div>
 
 <script>
 
-const users={
-
-Apa:{pass:"1029384756",role:"admin"},
-popstar:{pass:"popstar1",role:"editor"},
-"Люся":{pass:"nik69nikita",role:"editor"}
-
-}
-
-let role="viewer"
-
-function login(){
-
-let u=document.getElementById("user").value
-let p=document.getElementById("pass").value
-
-if(users[u] && users[u].pass==p){
-
-role=users[u].role
-
-document.getElementById("login").style.display="none"
-document.getElementById("panel").style.display="block"
-
-load()
-
-}
-
-else{
-
-alert("Неверный логин")
-
-}
-
-}
-
-function viewer(){
-
-role="viewer"
-
-document.getElementById("login").style.display="none"
-document.getElementById("panel").style.display="block"
-
-load()
-
-}
+let table=document.getElementById("table")
 
 function addTeam(){
-
-if(role=="viewer") return
-
-let table=document.getElementById("table")
 
 let row=table.insertRow()
 
 row.innerHTML=`
-<td>${table.rows.length-1}</td>
-<td contenteditable="true">TEAM</td>
-<td contenteditable="true" oninput="calc()">0</td>
-<td contenteditable="true" oninput="calc()">0</td>
-<td>0</td>
+
+<td class="rank">0</td>
+
+<td>
+<input class="team" placeholder="Team">
+</td>
+
+<td>
+<input type="number" value="0" class="pts">
+</td>
+
+<td>
+<input type="number" value="0" class="kills">
+</td>
+
+<td class="total">0</td>
+
+<td>
+<button onclick="del(this)">X</button>
+</td>
+
 `
 
 }
 
-function calc(){
+function del(btn){
 
-let rows=document.getElementById("table").rows
-
-for(let i=1;i<rows.length;i++){
-
-let kills=parseInt(rows[i].cells[2].innerText)||0
-let pts=parseInt(rows[i].cells[3].innerText)||0
-
-rows[i].cells[4].innerText=kills+pts
-
-}
-
-updateChart()
-save()
+btn.parentElement.parentElement.remove()
 
 }
 
 function sortTable(){
 
-let table=document.getElementById("table")
-
 let rows=[...table.rows].slice(1)
 
-rows.sort((a,b)=>b.cells[4].innerText-a.cells[4].innerText)
+rows.forEach(r=>{
 
-rows.forEach(r=>table.appendChild(r))
+let pts=r.querySelector(".pts").value*1
+let kills=r.querySelector(".kills").value*1
 
-for(let i=1;i<table.rows.length;i++){
+r.querySelector(".total").innerText=pts+kills
 
-table.rows[i].cells[0].innerText=i
+})
 
-table.rows[i].classList.remove("top1","top2","top3")
+rows.sort((a,b)=>{
 
-if(i==1){
-table.rows[i].classList.add("top1")
-document.getElementById("trophy").style.display="block"
+let A=a.querySelector(".total").innerText
+let B=b.querySelector(".total").innerText
+
+return B-A
+
+})
+
+rows.forEach((r,i)=>{
+
+table.appendChild(r)
+
+let rank=i+1
+
+r.querySelector(".rank").innerHTML=rank
+
+r.classList.remove("first","second","third")
+
+if(rank==1){
+r.classList.add("first")
+r.querySelector(".rank").innerHTML="🏆 1"
 }
 
-if(i==2) table.rows[i].classList.add("top2")
-if(i==3) table.rows[i].classList.add("top3")
-
+if(rank==2){
+r.classList.add("second")
 }
+
+if(rank==3){
+r.classList.add("third")
+}
+
+})
 
 updateChart()
+
 save()
 
 }
-
-let chart
 
 function updateChart(){
 
 let names=[]
 let totals=[]
 
-let rows=document.getElementById("table").rows
+let rows=[...table.rows].slice(1)
 
-for(let i=1;i<rows.length;i++){
+rows.forEach(r=>{
 
-names.push(rows[i].cells[1].innerText)
-totals.push(rows[i].cells[4].innerText)
+let name=r.querySelector(".team").value
+let total=r.querySelector(".total").innerText
 
-}
+names.push(name)
+totals.push(total)
 
-if(chart) chart.destroy()
+})
 
-chart=new Chart(document.getElementById("chart"),{
+new Chart(document.getElementById("chart"),{
 
 type:"bar",
 
 data:{
 labels:names,
 datasets:[{
-label:"TOTAL",
+label:"Total Points",
 data:totals,
-backgroundColor:"#4cc9ff"
+backgroundColor:"#00eaff"
 }]
+},
+
+options:{
+animation:true
 }
+
+})
+
+}
+
+function download(){
+
+html2canvas(document.getElementById("poster")).then(canvas=>{
+
+let link=document.createElement("a")
+
+link.download="tournament.png"
+
+link.href=canvas.toDataURL()
+
+link.click()
 
 })
 
@@ -275,12 +290,13 @@ if(data){
 table.innerHTML=data
 }
 
-updateChart()
-
 }
+
+setInterval(save,3000)
+
+load()
 
 </script>
 
 </body>
-
 </html>
