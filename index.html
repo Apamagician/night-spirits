@@ -5,21 +5,20 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>Night Spirits Tournament</title>
+<title>Night Spirits</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
 <style>
 
 body{
 margin:0;
 font-family:Arial;
+background:linear-gradient(45deg,#020617,#001233,#020617);
+background-size:300% 300%;
+animation:bg 10s infinite alternate;
 color:white;
 text-align:center;
-background:linear-gradient(-45deg,#020617,#0a1c3d,#001233,#020617);
-background-size:400% 400%;
-animation:bg 15s infinite alternate;
 }
 
 @keyframes bg{
@@ -27,32 +26,25 @@ animation:bg 15s infinite alternate;
 100%{background-position:100%}
 }
 
-.logo{
-font-size:48px;
+h1{
 color:#4cc9ff;
-text-shadow:0 0 30px #4cc9ff;
-margin-top:20px;
+text-shadow:0 0 20px #4cc9ff;
 }
 
-/* BIG TROPHY */
-
-#bigTrophy{
-font-size:120px;
-opacity:0;
-transform:scale(0);
-transition:0.6s;
+input{
+padding:10px;
+margin:5px;
+border:none;
+border-radius:6px;
 }
 
-#bigTrophy.show{
-opacity:1;
-transform:scale(1);
-animation:pop 1s;
-}
-
-@keyframes pop{
-0%{transform:scale(0)}
-60%{transform:scale(1.4)}
-100%{transform:scale(1)}
+button{
+padding:10px 15px;
+margin:5px;
+border:none;
+border-radius:6px;
+background:#1f4cff;
+color:white;
 }
 
 table{
@@ -60,53 +52,20 @@ width:95%;
 margin:auto;
 border-collapse:collapse;
 margin-top:20px;
-background:#08142e;
-}
-
-th{
-background:#0e2247;
-color:#7bdcff;
 }
 
 th,td{
 padding:10px;
-border-bottom:1px solid #1c2e57;
+border-bottom:1px solid #333;
 }
 
-tr:hover{
-background:#0e244a;
-}
+.top1{background:black}
+.top2{background:#444}
+.top3{background:#999;color:black}
 
-/* TOP COLORS */
-
-.top1{
-background:#000;
-font-weight:bold;
-}
-
-.top2{
-background:#444;
-}
-
-.top3{
-background:#999;
-color:black;
-}
-
-button{
-
-background:#1f4cff;
-border:none;
-color:white;
-padding:10px 16px;
-margin:6px;
-border-radius:6px;
-cursor:pointer;
-
-}
-
-button:hover{
-background:#4c6cff;
+#trophy{
+font-size:80px;
+display:none;
 }
 
 </style>
@@ -115,67 +74,106 @@ background:#4c6cff;
 
 <body>
 
-<div class="logo">Night Spirits</div>
+<h1>Night Spirits</h1>
 
-<div id="bigTrophy">🏆</div>
+<div id="login">
 
-<div>
+<input id="user" placeholder="login">
+<input id="pass" type="password" placeholder="password">
 
-<button onclick="addTeam()">Добавить команду</button>
-<button onclick="sortTable()">Сортировать</button>
-<button onclick="downloadPNG()">📥 PNG</button>
-<button onclick="downloadCSV()">📁 CSV</button>
+<br>
+
+<button onclick="login()">Login</button>
+<button onclick="viewer()">Просмотр</button>
 
 </div>
 
-<div id="capture">
+<div id="panel" style="display:none">
+
+<div id="trophy">🏆</div>
+
+<button onclick="addTeam()">Добавить</button>
+<button onclick="sortTable()">Сортировать</button>
 
 <table id="table">
 
 <tr>
 <th>TOP</th>
 <th>TEAM</th>
-<th>WWCD</th>
 <th>KILLS</th>
-<th>PLC</th>
+<th>PTS</th>
 <th>TOTAL</th>
 </tr>
 
 </table>
 
-</div>
-
-<h2>📊 Tournament Stats</h2>
-
+<h2>Graph</h2>
 <canvas id="chart"></canvas>
+
+</div>
 
 <script>
 
-let chart
+const users={
+
+Apa:{pass:"1029384756",role:"admin"},
+popstar:{pass:"popstar1",role:"editor"},
+"Люся":{pass:"nik69nikita",role:"editor"}
+
+}
+
+let role="viewer"
+
+function login(){
+
+let u=document.getElementById("user").value
+let p=document.getElementById("pass").value
+
+if(users[u] && users[u].pass==p){
+
+role=users[u].role
+
+document.getElementById("login").style.display="none"
+document.getElementById("panel").style.display="block"
+
+load()
+
+}
+
+else{
+
+alert("Неверный логин")
+
+}
+
+}
+
+function viewer(){
+
+role="viewer"
+
+document.getElementById("login").style.display="none"
+document.getElementById("panel").style.display="block"
+
+load()
+
+}
 
 function addTeam(){
 
-let table=document.getElementById("table")
+if(role=="viewer") return
 
-if(table.rows.length>30){
-alert("Max 30 teams")
-return
-}
+let table=document.getElementById("table")
 
 let row=table.insertRow()
 
-row.innerHTML=
-
+row.innerHTML=`
 <td>${table.rows.length-1}</td>
 <td contenteditable="true">TEAM</td>
 <td contenteditable="true" oninput="calc()">0</td>
 <td contenteditable="true" oninput="calc()">0</td>
-<td contenteditable="true" oninput="calc()">0</td>
 <td>0</td>
-
-
-
-save()
+`
 
 }
 
@@ -185,11 +183,10 @@ let rows=document.getElementById("table").rows
 
 for(let i=1;i<rows.length;i++){
 
-let wwcd=parseInt(rows[i].cells[2].innerText)||0
-let kills=parseInt(rows[i].cells[3].innerText)||0
-let plc=parseInt(rows[i].cells[4].innerText)||0
+let kills=parseInt(rows[i].cells[2].innerText)||0
+let pts=parseInt(rows[i].cells[3].innerText)||0
 
-rows[i].cells[5].innerText=wwcd+kills+plc
+rows[i].cells[4].innerText=kills+pts
 
 }
 
@@ -204,7 +201,7 @@ let table=document.getElementById("table")
 
 let rows=[...table.rows].slice(1)
 
-rows.sort((a,b)=>b.cells[5].innerText-a.cells[5].innerText)
+rows.sort((a,b)=>b.cells[4].innerText-a.cells[4].innerText)
 
 rows.forEach(r=>table.appendChild(r))
 
@@ -215,15 +212,8 @@ table.rows[i].cells[0].innerText=i
 table.rows[i].classList.remove("top1","top2","top3")
 
 if(i==1){
-
 table.rows[i].classList.add("top1")
-
-let team=table.rows[i].cells[1]
-
-team.innerHTML="🏆 "+team.innerText
-
-document.getElementById("bigTrophy").classList.add("show")
-
+document.getElementById("trophy").style.display="block"
 }
 
 if(i==2) table.rows[i].classList.add("top2")
@@ -236,7 +226,7 @@ save()
 
 }
 
-/* GRAPH */
+let chart
 
 function updateChart(){
 
@@ -248,7 +238,7 @@ let rows=document.getElementById("table").rows
 for(let i=1;i<rows.length;i++){
 
 names.push(rows[i].cells[1].innerText)
-totals.push(Number(rows[i].cells[5].innerText)||0)
+totals.push(rows[i].cells[4].innerText)
 
 }
 
@@ -265,66 +255,15 @@ label:"TOTAL",
 data:totals,
 backgroundColor:"#4cc9ff"
 }]
-},
-
-options:{
-animation:{duration:1500}
 }
 
 })
 
 }
-
-/* EXPORT PNG */
-
-function downloadPNG(){
-
-html2canvas(document.getElementById("capture")).then(canvas=>{
-
-let link=document.createElement("a")
-
-link.download="night_spirits.png"
-
-link.href=canvas.toDataURL()
-
-link.click()
-
-})
-
-}
-
-/* EXPORT CSV */
-  function downloadCSV(){
-
-let rows=document.querySelectorAll("table tr")
-let csv=[]
-
-rows.forEach(r=>{
-
-let cols=r.querySelectorAll("td,th")
-let row=[]
-
-cols.forEach(c=>row.push(c.innerText))
-
-csv.push(row.join(","))
-
-})
-
-let blob=new Blob([csv.join("\n")])
-let link=document.createElement("a")
-
-link.href=URL.createObjectURL(blob)
-link.download="tournament.csv"
-
-link.click()
-
-}
-
-/* STORAGE */
 
 function save(){
 
-localStorage.setItem("tournament",document.getElementById("table").innerHTML)
+localStorage.setItem("tournament",table.innerHTML)
 
 }
 
@@ -333,16 +272,12 @@ function load(){
 let data=localStorage.getItem("tournament")
 
 if(data){
-document.getElementById("table").innerHTML=data
+table.innerHTML=data
 }
 
 updateChart()
 
 }
-
-setInterval(load,3000)
-
-window.onload=load
 
 </script>
 
