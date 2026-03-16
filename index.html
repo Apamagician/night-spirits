@@ -93,6 +93,7 @@ padding:5px;
 <button onclick="addTeam()">Добавить</button>
 <button onclick="sortTable()">Сортировать</button>
 <button onclick="download()">Скачать PNG</button>
+<button onclick="logout()">Выйти</button>
 
 <table id="table">
 
@@ -150,6 +151,17 @@ alert("Wrong login")
 }
 
 function viewer(){
+
+role="viewer"
+
+localStorage.setItem("ns_role","viewer")
+
+document.getElementById("login").style.display="none"
+document.getElementById("panel").style.display="block"
+
+load()
+
+}
 
 role="viewer"
 
@@ -290,7 +302,29 @@ localStorage.setItem("ns_table",table.innerHTML)
 
 }
 
-function load(){
+function login(){
+
+let u=document.getElementById("user").value
+let p=document.getElementById("pass").value
+
+if(users[u] && users[u].pass==p){
+
+role=users[u].role
+
+localStorage.setItem("ns_role",role)
+
+document.getElementById("login").style.display="none"
+document.getElementById("panel").style.display="block"
+
+load()
+
+}else{
+
+alert("Wrong login")
+
+}
+
+}
 
 let data=localStorage.getItem("ns_table")
 
@@ -302,6 +336,32 @@ updateChart()
 
 setInterval(save,3000)
 
+function logout(){
+
+save()
+
+localStorage.removeItem("ns_role")
+
+location.reload()
+
+}
+
+window.onload=function(){
+
+let savedRole=localStorage.getItem("ns_role")
+
+if(savedRole){
+
+role=savedRole
+
+document.getElementById("login").style.display="none"
+document.getElementById("panel").style.display="block"
+
+}
+
+load()
+
+}
 </script>
 
 </body>
